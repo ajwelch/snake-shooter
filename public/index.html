@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Snake Shooter</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -10,21 +10,28 @@
     background: #0a0a0a;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     min-height: 100vh;
     font-family: 'Segoe UI', system-ui, sans-serif;
     overflow: hidden;
+    touch-action: manipulation;
+    overscroll-behavior: none;
+    -webkit-user-select: none;
+    user-select: none;
   }
   #gameContainer {
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: 100%;
+    max-width: 800px;
   }
   #hud {
     display: flex;
     justify-content: space-between;
-    width: 800px;
+    width: 100%;
+    max-width: 800px;
     padding: 10px 20px;
     color: #0ff;
     font-size: 18px;
@@ -36,6 +43,8 @@
     border: 2px solid #0ff;
     box-shadow: 0 0 20px rgba(0,255,255,0.3), inset 0 0 20px rgba(0,255,255,0.05);
     border-radius: 4px;
+    touch-action: none;
+    display: block;
   }
   #overlay {
     position: absolute;
@@ -47,6 +56,7 @@
     background: rgba(0,0,0,0.85);
     z-index: 10;
     color: #fff;
+    padding: 20px;
   }
   #overlay.hidden { display: none; }
   #overlay h1 {
@@ -111,6 +121,7 @@
     text-align: center;
     outline: none;
     width: 280px;
+    max-width: 90%;
     margin: 15px 0;
   }
   #nameInput::placeholder { color: #066; }
@@ -118,6 +129,7 @@
   #leaderboardList {
     list-style: none;
     width: 350px;
+    max-width: 90%;
     max-height: 320px;
     overflow-y: auto;
     margin-bottom: 20px;
@@ -136,6 +148,81 @@
   #leaderboardList li .name { color: #0ff; flex: 1; }
   #leaderboardList li .score { color: #0f0; font-weight: bold; }
   #leaderboardList li.highlight { background: rgba(0,255,0,0.15); border-color: #0f0; }
+
+  /* Touch Controls */
+  #touchControls {
+    display: none;
+    width: 100%;
+    max-width: 800px;
+    padding: 10px 20px;
+    justify-content: space-between;
+    align-items: center;
+    touch-action: none;
+  }
+  .dpad {
+    display: grid;
+    grid-template-columns: 56px 56px 56px;
+    grid-template-rows: 56px 56px 56px;
+    gap: 4px;
+  }
+  .dpad-btn {
+    width: 56px;
+    height: 56px;
+    background: rgba(0,255,255,0.1);
+    border: 2px solid rgba(0,255,255,0.4);
+    border-radius: 8px;
+    color: #0ff;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+  }
+  .dpad-btn:active, .dpad-btn.active {
+    background: rgba(0,255,255,0.35);
+    border-color: #0ff;
+    box-shadow: 0 0 15px rgba(0,255,255,0.4);
+  }
+  .dpad-blank { visibility: hidden; }
+  .fire-btn {
+    width: 100px;
+    height: 100px;
+    background: rgba(255,68,68,0.15);
+    border: 3px solid rgba(255,68,68,0.5);
+    border-radius: 50%;
+    color: #f44;
+    font-size: 16px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    text-shadow: 0 0 10px #f44;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+  }
+  .fire-btn:active, .fire-btn.active {
+    background: rgba(255,68,68,0.4);
+    border-color: #f44;
+    box-shadow: 0 0 25px rgba(255,68,68,0.5);
+  }
+
+  /* Mobile responsive */
+  @media (max-width: 600px) {
+    body { align-items: flex-start; padding-top: 5px; }
+    #hud { font-size: 13px; padding: 6px 10px; letter-spacing: 1px; }
+    #overlay h1 { font-size: 32px; letter-spacing: 3px; }
+    #overlay h2 { font-size: 20px; margin-bottom: 15px; }
+    #overlay .controls { font-size: 13px; gap: 6px 12px; margin-bottom: 15px; }
+    .btn { padding: 12px 36px; font-size: 16px; }
+    #gameOverScreen .final-score { font-size: 28px; }
+    #leaderboardScreen h2 { font-size: 24px; }
+    #leaderboardList { max-height: 200px; }
+    #leaderboardList li { font-size: 14px; padding: 8px 12px; }
+  }
 </style>
 </head>
 <body>
@@ -151,7 +238,7 @@
     <div id="startScreen">
       <h1>SNAKE SHOOTER</h1>
       <h2>Eat. Grow. Destroy.</h2>
-      <div class="controls">
+      <div class="controls" id="controlsText">
         <span class="key">Arrow Keys</span><span>Move</span>
         <span class="key">Space</span><span>Shoot</span>
       </div>
@@ -168,6 +255,20 @@
       <ul id="leaderboardList"></ul>
       <button class="btn" onclick="game.restart()">PLAY AGAIN</button>
     </div>
+  </div>
+  <div id="touchControls">
+    <div class="dpad">
+      <div class="dpad-blank"></div>
+      <div class="dpad-btn" data-dir="up">&#9650;</div>
+      <div class="dpad-blank"></div>
+      <div class="dpad-btn" data-dir="left">&#9664;</div>
+      <div class="dpad-blank"></div>
+      <div class="dpad-btn" data-dir="right">&#9654;</div>
+      <div class="dpad-blank"></div>
+      <div class="dpad-btn" data-dir="down">&#9660;</div>
+      <div class="dpad-blank"></div>
+    </div>
+    <div class="fire-btn" id="fireBtn">FIRE</div>
   </div>
 </div>
 
@@ -282,9 +383,61 @@ class Particle {
 // --- Main Game ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const W = canvas.width, H = canvas.height;
-const CELL = 20;
-const COLS = W / CELL, ROWS = H / CELL;
+let W = 800, H = 600;
+let CELL = 20;
+let COLS = 40, ROWS = 30;
+const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+function resizeCanvas() {
+  const screenW = window.innerWidth;
+  const screenH = window.innerHeight;
+  const isPortrait = screenH > screenW;
+  const isMobile = screenW <= 600;
+
+  if (isMobile || isTouchDevice) {
+    const hudHeight = 40;
+    const controlsHeight = isTouchDevice ? 190 : 0;
+    const padding = 10;
+    const availW = screenW - padding * 2;
+    const availH = screenH - hudHeight - controlsHeight - padding;
+
+    if (isPortrait) {
+      COLS = 20;
+      ROWS = 30;
+    } else {
+      COLS = 40;
+      ROWS = 30;
+    }
+
+    CELL = Math.floor(Math.min(availW / COLS, availH / ROWS));
+    if (CELL < 8) CELL = 8;
+    W = COLS * CELL;
+    H = ROWS * CELL;
+  } else {
+    COLS = 40;
+    ROWS = 30;
+    CELL = 20;
+    W = 800;
+    H = 600;
+  }
+
+  canvas.width = W;
+  canvas.height = H;
+
+  // Regenerate stars for new dimensions
+  if (game.bgStars) {
+    game.bgStars = [];
+    for (let i = 0; i < 80; i++) {
+      game.bgStars.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        size: Math.random() * 2 + 0.5,
+        speed: Math.random() * 0.3 + 0.1,
+        brightness: Math.random()
+      });
+    }
+  }
+}
 
 const game = {
   sfx: new SFX(),
@@ -307,8 +460,13 @@ const game = {
   screenShake: 0,
   bgStars: [],
   gridPulse: 0,
+  touchStartX: 0,
+  touchStartY: 0,
+  touchStartTime: 0,
 
   init() {
+    resizeCanvas();
+
     // Create background stars
     this.bgStars = [];
     for (let i = 0; i < 80; i++) {
@@ -320,8 +478,96 @@ const game = {
         brightness: Math.random()
       });
     }
+
     document.addEventListener('keydown', (e) => this.onKey(e));
+
+    // Touch controls
+    if (isTouchDevice) {
+      document.getElementById('touchControls').style.display = 'flex';
+      document.getElementById('controlsText').innerHTML =
+        '<span class="key">D-Pad / Swipe</span><span>Move</span>' +
+        '<span class="key">Fire Button</span><span>Shoot</span>';
+      this.initTouchControls();
+    }
+
+    window.addEventListener('resize', () => {
+      const wasRunning = this.running;
+      resizeCanvas();
+      // If game not running, no need to fix positions
+    });
+
     this.gameLoop(performance.now());
+  },
+
+  initTouchControls() {
+    // D-pad buttons
+    document.querySelectorAll('.dpad-btn').forEach(btn => {
+      const handler = (e) => {
+        e.preventDefault();
+        if (!this.running) return;
+        const dir = btn.dataset.dir;
+        const { dir: curDir } = this;
+        switch(dir) {
+          case 'up':    if (curDir.y === 0) this.nextDir = { x:0, y:-1 }; break;
+          case 'down':  if (curDir.y === 0) this.nextDir = { x:0, y:1 };  break;
+          case 'left':  if (curDir.x === 0) this.nextDir = { x:-1, y:0 }; break;
+          case 'right': if (curDir.x === 0) this.nextDir = { x:1, y:0 };  break;
+        }
+      };
+      btn.addEventListener('touchstart', handler, { passive: false });
+      // Visual feedback
+      btn.addEventListener('touchstart', () => btn.classList.add('active'), { passive: true });
+      btn.addEventListener('touchend', () => btn.classList.remove('active'), { passive: true });
+      btn.addEventListener('touchcancel', () => btn.classList.remove('active'), { passive: true });
+    });
+
+    // Fire button
+    const fireBtn = document.getElementById('fireBtn');
+    fireBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (this.running) this.shoot();
+      fireBtn.classList.add('active');
+    }, { passive: false });
+    fireBtn.addEventListener('touchend', () => fireBtn.classList.remove('active'), { passive: true });
+    fireBtn.addEventListener('touchcancel', () => fireBtn.classList.remove('active'), { passive: true });
+
+    // Swipe detection on canvas
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      this.touchStartX = touch.clientX;
+      this.touchStartY = touch.clientY;
+      this.touchStartTime = Date.now();
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      if (!this.running) return;
+      const touch = e.changedTouches[0];
+      const dx = touch.clientX - this.touchStartX;
+      const dy = touch.clientY - this.touchStartY;
+      const elapsed = Date.now() - this.touchStartTime;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+
+      // Only register swipe if moved enough and fast enough
+      if (dist > 30 && elapsed < 500) {
+        const { dir } = this;
+        if (Math.abs(dx) > Math.abs(dy)) {
+          // Horizontal swipe
+          if (dx > 0 && dir.x === 0) this.nextDir = { x:1, y:0 };
+          else if (dx < 0 && dir.x === 0) this.nextDir = { x:-1, y:0 };
+        } else {
+          // Vertical swipe
+          if (dy > 0 && dir.y === 0) this.nextDir = { x:0, y:1 };
+          else if (dy < 0 && dir.y === 0) this.nextDir = { x:0, y:-1 };
+        }
+      }
+    }, { passive: false });
+
+    // Prevent scrolling/zooming on the game container
+    document.getElementById('gameContainer').addEventListener('touchmove', (e) => {
+      e.preventDefault();
+    }, { passive: false });
   },
 
   start() {
@@ -387,7 +633,7 @@ const game = {
   },
 
   shoot() {
-    if (this.shootCooldown > 0) return;
+    if (this.shootCooldown > 0 || !this.snake.length) return;
     const head = this.snake[0];
     this.bullets.push({
       x: head.x * CELL + CELL/2,
